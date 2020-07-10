@@ -48,7 +48,6 @@ while true; do
 	done
 	
 	if [[ "${1}" == "youtube"* ]]; then ID=$(wget -q -O- "${FULL_URL}" | grep -o '\\"liveStreamabilityRenderer\\":{\\"videoId\\":\\".*\\"' | head -n 1 | sed 's/\\//g' | awk -F'"' '{print $6}') ; FNAME="youtube_${PART_URL}_$(date +"%Y%m%d_%H%M%S")_${ID}.ts"; fi
-	if [[ "${1}" == "youtubeffmpeg" ]]; then STREAM_URL=$(streamlink --stream-url "${FULL_URL}" "${FORMAT}"); fi
 	
 	if [[ "${1}" == "youtube-dl" ]]; then
 		(youtube-dl --cookies ./cookies.txt --ignore-errors --embed-thumbnail -x --audio-quality 0 -f 'best[height<=480]' -o '%(uploader)s/%(upload_date)s_%(title)s.%(ext)s' "https://www.youtube.com/watch?v=${ID}" 2>/dev/null)
@@ -58,20 +57,8 @@ while true; do
 	RECORD_STOPTIME=$(( $(date +%s)+${LOOP_TIME} )) #录制结束时间戳
 	RECORD_ENDTIME=$(( $(date +%s)+${ENDINTERVAL} )) #录制循环结束的最早时间
 	LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} record start pid=${RECORD_PID} looptime=${LOOP_TIME} url=${STREAM_URL}" #开始录制
-	while true; do
-		sleep 15
-		PID_EXIST=$(ps aux | awk '{print $2}'| grep -w ${RECORD_PID})
-		if [[ ! $PID_EXIST ]]; then
-			LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} record already stopped"
-			break
-		else
-			if [[ "${LOOP_TIME}" != "once" ]] && [[ "${LOOP_TIME}" != "loop" ]] && [[ $(date +%s) -gt ${RECORD_STOPTIME} ]]; then #录制时间到达则终止录制
-				LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} time up kill record process ${RECORD_PID}"
-				kill ${RECORD_PID}
-				break
-			fi
-		fi
-	done
+	sleep 15
+	kill ${RECORD_PID}
 	
 	[[ "${LOOP_TIME}" == "once" ]] && break
 	
