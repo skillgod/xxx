@@ -53,9 +53,6 @@ while true; do
 	if [[ "${1}" == "youtube-dl" ]]; then
 		(youtube-dl --ignore-errors --embed-thumbnail -x --audio-quality 0 -f 'best[height<=480]' -o '%(uploader)s/%(release_date)s_%(upload_date)s_%(title)s.%(ext)s' "https://www.youtube.com/watch?v=${ID}" 2>/dev/null)
 	fi
-	if [[ "${1}" == "youtubeffmpeg" || "${1}" == "twitcastffmpeg" || "${1}" == "twitch" || "${1}" == "openrec" || "${1}" == "mirrativ" || "${1}" == "reality" || "${1}" == "17live" || "${1}" == "chaturbate" || "${1}" == "streamlink" || "${1}" == "m3u8" ]]; then
-		(ffmpeg -user_agent "Mozilla/5.0" -i "${STREAM_URL}" -codec copy -f mpegts "${DIR_LOCAL}/${FNAME}" > "${DIR_LOCAL}/${FNAME}.log" 2>&1) &
-	fi
 	
 	RECORD_PID=$! #录制进程PID
 	RECORD_STOPTIME=$(( $(date +%s)+${LOOP_TIME} )) #录制结束时间戳
@@ -75,124 +72,6 @@ while true; do
 			fi
 		fi
 	done
-	
-	
-	
-	if [[ "${1}" == "twitcast" ]]; then
-		LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} remane livedl/${DLNAME} to ${DIR_LOCAL}/${FNAME}"
-		mv "livedl/${DLNAME}" "${DIR_LOCAL}/${FNAME}"
-	fi
-	
-	(
-	if [[ "${1}" == "nicolv"* || "${1}" == "nicoco"* || "${1}" == "nicoch"* ]]; then
-		if [[ -f "livedl/${DLNAME}.sqlite3" ]]; then
-			LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} convert start livedl/${DLNAME}.sqlite3 to livedl/${DLNAME}.ts"
-			livedl/livedl -d2m -conv-ext=ts "${DLNAME}.sqlite3" >> "${DIR_LOCAL}/${FNAME}.log" 2>&1
-			LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} convert stopped remove livedl/${DLNAME}.sqlite3 and xml"
-			rm "livedl/${DLNAME}.sqlite3" ; rm "livedl/${DLNAME}.xml"
-			LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} remane livedl/${DLNAME}.ts to ${DIR_LOCAL}/${FNAME}"
-			mv "livedl/${DLNAME}.ts" "${DIR_LOCAL}/${FNAME}"
-		fi
-		if [[ -f "livedl/${DLNAME}(TS).sqlite3" ]]; then
-			LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} convert start livedl/${DLNAME}(TS).sqlite3 to livedl/${DLNAME}(TS).ts"
-			livedl/livedl -d2m -conv-ext=ts "${DLNAME}(TS).sqlite3" >> "${DIR_LOCAL}/${FNAME}.log" 2>&1
-			LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} convert stopped remove livedl/${DLNAME}(TS).sqlite3 and xml"
-			rm "livedl/${DLNAME}(TS).sqlite3" ; rm "livedl/${DLNAME}(TS).xml"
-			LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} remane livedl/${DLNAME}(TS).ts to ${DIR_LOCAL}/${FNAME}"
-			mv "livedl/${DLNAME}(TS).ts" "${DIR_LOCAL}/${FNAME}"
-		fi
-	fi
-	
-	
-	
-	if [[ ! -f "${DIR_LOCAL}/${FNAME}" ]] || [[ $(ls -l "${DIR_LOCAL}/${FNAME}" | awk '{print $5}') == 0 ]]; then #判断是否无录像
-		LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} ${DIR_LOCAL}/${FNAME} file not exist remove log"
-		rm -f "${DIR_LOCAL}/${FNAME}" ; rm -f "${DIR_LOCAL}/${FNAME}.log"
-	elif [[ "${1}" == "bilibili"* ]] && [[ $(ls -l "${DIR_LOCAL}/${FNAME}" | awk '{print $5}') -lt 3000000 ]]; then
-		LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} ${DIR_LOCAL}/${FNAME} file is too small remove file and log"
-		rm -f "${DIR_LOCAL}/${FNAME}" ; rm -f "${DIR_LOCAL}/${FNAME}.log"
-	else
-		RCLONE_FILE_RETRY=1 ; RCLONE_FILE_ERRFLAG=""
-		if [[ "${BACKUP_DISK}" == *"rclone"* ]]; then
-			until [[ ${RCLONE_FILE_RETRY} -gt ${BACKUP_RETRY_MAX} ]]; do
-				LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} upload rclone ${DIR_LOCAL}/${FNAME} start retry ${RCLONE_FILE_RETRY}"
-				RCLONE_FILE_ERRFLAG=$(rclone copy "${DIR_LOCAL}/${FNAME}" "${DIR_RCLONE}" 2>&1)
-				[[ "${RCLONE_FILE_ERRFLAG}" == "" ]] && (LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} upload rclone ${DIR_LOCAL}/${FNAME} success") && break
-				let RCLONE_FILE_RETRY++
-				sleep 30
-			done
-			[[ "${RCLONE_FILE_ERRFLAG}" == "" ]] || (LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} upload rclone ${DIR_LOCAL}/${FNAME} fail" ; echo "${LOG_PREFIX} upload rclone ${DIR_LOCAL}/${FNAME} fail" > "${DIR_LOCAL}/${FNAME}.rclonefail.log" ; echo "${RCLONE_FILE_ERRFLAG}" >> "${DIR_LOCAL}/${FNAME}.rclonefail.log")
-		fi
-		RCLONE_LOG_RETRY=1 ; RCLONE_LOG_ERRFLAG=""
-		if [[ "${BACKUP_DISK}" == *"rclone"* ]]; then
-			until [[ ${RCLONE_LOG_RETRY} -gt ${BACKUP_RETRY_MAX} ]]; do
-				LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} upload rclone ${DIR_LOCAL}/${FNAME}.log start retry ${RCLONE_LOG_RETRY}"
-				RCLONE_LOG_ERRFLAG=$(rclone copy "${DIR_LOCAL}/${FNAME}.log" "${DIR_RCLONE}" 2>&1)
-				[[ "${RCLONE_LOG_ERRFLAG}" == "" ]] && (LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} upload rclone ${DIR_LOCAL}/${FNAME}.log success") && break
-				let RCLONE_LOG_RETRY++
-				sleep 30
-			done
-			[[ "${RCLONE_LOG_ERRFLAG}" == "" ]] || (LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} upload rclone ${DIR_LOCAL}/${FNAME}.log fail" ; echo "${LOG_PREFIX} upload rclone ${DIR_LOCAL}/${FNAME}.log fail" > "${DIR_LOCAL}/${FNAME}.log.rclonefail.log" ; echo "${RCLONE_LOG_ERRFLAG}" >> "${DIR_LOCAL}/${FNAME}.log.rclonefail.log")
-		fi
-		
-		ONEDRIVE_FILE_RETRY=1 ; ONEDRIVE_FILE_ERRFLAG=0
-		if [[ "${BACKUP_DISK}" == *"onedrive"* ]]; then
-			until [[ ${ONEDRIVE_FILE_RETRY} -gt ${BACKUP_RETRY_MAX} ]]; do
-				LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} upload onedrive ${DIR_LOCAL}/${FNAME} start retry ${ONEDRIVE_FILE_RETRY}"
-				ONEDRIVE_FILE_ERRLOG=$(OneDriveUploader -s "${DIR_LOCAL}/${FNAME}" -r "${DIR_ONEDRIVE}")
-				ONEDRIVE_FILE_ERRFLAG=$?
-				[[ "${ONEDRIVE_FILE_ERRFLAG}" == 0 ]] && (LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} upload onedrive ${DIR_LOCAL}/${FNAME} success") && break
-				let ONEDRIVE_FILE_RETRY++
-				sleep 30
-			done
-			[[ "${ONEDRIVE_FILE_ERRFLAG}" == 0 ]] || (LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} upload onedrive ${DIR_LOCAL}/${FNAME} fail" ; echo "${LOG_PREFIX} upload onedrive ${DIR_LOCAL}/${FNAME} fail" > "${DIR_LOCAL}/${FNAME}.onedrivefail.log" ; echo "${ONEDRIVE_FILE_ERRFLAG}" >> "${DIR_LOCAL}/${FNAME}.onedrivefail.log" ; echo "${ONEDRIVE_FILE_ERRLOG}" >> "${DIR_LOCAL}/${FNAME}.onedrivefail.log")
-		fi
-		ONEDRIVE_LOG_RETRY=1 ; ONEDRIVE_LOG_ERRFLAG=0
-		if [[ "${BACKUP_DISK}" == *"onedrive"* ]]; then
-			until [[ ${ONEDRIVE_LOG_RETRY} -gt ${BACKUP_RETRY_MAX} ]]; do
-				LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} upload onedrive ${DIR_LOCAL}/${FNAME}.log start retry ${ONEDRIVE_LOG_RETRY}"
-				ONEDRIVE_LOG_ERRLOG=$(OneDriveUploader -s "${DIR_LOCAL}/${FNAME}.log" -r "${DIR_ONEDRIVE}")
-				ONEDRIVE_LOG_ERRFLAG=$?
-				[[ "${ONEDRIVE_LOG_ERRFLAG}" == 0 ]] && (LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} upload onedrive ${DIR_LOCAL}/${FNAME}.log success") && break
-				let ONEDRIVE_LOG_RETRY++
-				sleep 30
-			done
-			[[ "${ONEDRIVE_LOG_ERRFLAG}" == 0 ]] || (LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} upload onedrive ${DIR_LOCAL}/${FNAME}.log fail" ; echo "${LOG_PREFIX} upload onedrive ${DIR_LOCAL}/${FNAME}.log fail" > "${DIR_LOCAL}/${FNAME}.log.onedrivefail.log" ; echo "${ONEDRIVE_LOG_ERRFLAG}" >> "${DIR_LOCAL}/${FNAME}.log.onedrivefail.log" ; echo "${ONEDRIVE_LOG_ERRLOG}" >> "${DIR_LOCAL}/${FNAME}.onedrivefail.log")
-		fi
-		
-		BAIDUPAN_FILE_RETRY=1 ; BAIDUPAN_FILE_ERRFLAG="成功"
-		if [[ "${BACKUP_DISK}" == *"baidupan"* ]]; then			
-			until [[ ${BAIDUPAN_FILE_RETRY} -gt ${BACKUP_RETRY_MAX} ]]; do
-				LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} upload baidupan ${DIR_LOCAL}/${FNAME} start retry ${BAIDUPAN_FILE_RETRY}"
-				BAIDUPAN_FILE_ERRFLAG=$(BaiduPCS-Go upload "${DIR_LOCAL}/${FNAME}" "${DIR_BAIDUPAN}")
-				(echo "${BAIDUPAN_FILE_ERRFLAG}" | grep -q "成功") && (LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} upload baidupan ${DIR_LOCAL}/${FNAME} success") && break
-				let BAIDUPAN_FILE_RETRY++
-				sleep 30
-			done
-			LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]")
-			(echo "${BAIDUPAN_FILE_ERRFLAG}" | grep -q "成功") || (echo "${LOG_PREFIX} upload baidupan ${DIR_LOCAL}/${FNAME} fail" ; echo "${LOG_PREFIX} upload baidupan ${DIR_LOCAL}/${FNAME} fail" > "${DIR_LOCAL}/${FNAME}.baidupanfail.log" ; echo "${BAIDUPAN_FILE_ERRFLAG}" >> "${DIR_LOCAL}/${FNAME}.baidupanfail.log")
-		fi
-		BAIDUPAN_LOG_RETRY=1 ; BAIDUPAN_LOG_ERRFLAG="成功"
-		if [[ "${BACKUP_DISK}" == *"baidupan"* ]]; then
-			until [[ ${BAIDUPAN_LOG_RETRY} -gt ${BACKUP_RETRY_MAX} ]]; do
-				LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} upload baidupan ${DIR_LOCAL}/${FNAME}.log start retry ${BAIDUPAN_LOG_RETRY}"
-				BAIDUPAN_LOG_ERRFLAG=$(BaiduPCS-Go upload "${DIR_LOCAL}/${FNAME}.log" "${DIR_BAIDUPAN}")
-				(echo "${BAIDUPAN_LOG_ERRFLAG}" | grep -q "成功") && (LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} upload baidupan ${DIR_LOCAL}/${FNAME}.log success") && break
-				let BAIDUPAN_LOG_RETRY++
-				sleep 30
-			done
-			(echo "${BAIDUPAN_FILE_ERRFLAG}" | grep -q "成功") || (LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} upload baidupan ${DIR_LOCAL}/${FNAME}.log fail" ; echo "${LOG_PREFIX} upload baidupan ${DIR_LOCAL}/${FNAME}.log fail" > "${DIR_LOCAL}/${FNAME}.log.baidupanfail.log" ; echo "${BAIDUPAN_LOG_ERRFLAG}" >> "${DIR_LOCAL}/${FNAME}.log.baidupanfail.log")
-		fi
-		
-		LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") #清除文件
-		[[ "${BACKUP}" == *"keep" ]] && (echo "${LOG_PREFIX} force keep ${DIR_LOCAL}/${FNAME}" ; echo "${LOG_PREFIX} force keep ${DIR_LOCAL}/${FNAME}.log")
-		[[ "${BACKUP}" == *"del" ]] && (echo "${LOG_PREFIX} force delete ${DIR_LOCAL}/${FNAME}" ; rm -f "${DIR_LOCAL}/${FNAME}" ; echo "${LOG_PREFIX} force delete ${DIR_LOCAL}/${FNAME}.log" ; rm -f "${DIR_LOCAL}/${FNAME}.log")
-		[[ "${BACKUP}" == "rclone" || "${BACKUP}" == "onedrive" || "${BACKUP}" == "baidupan" || "${BACKUP}" == *[0-9] ]] && [[ "${RCLONE_FILE_ERRFLAG}" == "" ]] && [[ "${ONEDRIVE_FILE_ERRFLAG}" == 0 ]] && (echo "${BAIDUPAN_FILE_ERRFLAG}" | grep -q "成功") && (echo "${LOG_PREFIX} remove ${DIR_LOCAL}/${FNAME}" ; rm -f "${DIR_LOCAL}/${FNAME}")
-		[[ "${BACKUP}" == "rclone" || "${BACKUP}" == "onedrive" || "${BACKUP}" == "baidupan" || "${BACKUP}" == *[0-9] ]] && [[ "${RCLONE_LOG_ERRFLAG}" == "" ]] && [[ "${ONEDRIVE_LOG_ERRFLAG}" == 0 ]] && (echo "${BAIDUPAN_LOG_ERRFLAG}" | grep -q "成功") && (echo "${LOG_PREFIX} remove ${DIR_LOCAL}/${FNAME}.log" ; rm -f "${DIR_LOCAL}/${FNAME}.log")
-	fi
-	) &
-	
-	
 	
 	[[ "${LOOP_TIME}" == "once" ]] && break
 	
