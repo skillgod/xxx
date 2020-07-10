@@ -51,7 +51,7 @@ while true; do
 	if [[ "${1}" == "youtubeffmpeg" ]]; then STREAM_URL=$(streamlink --stream-url "${FULL_URL}" "${FORMAT}"); fi
 	
 	if [[ "${1}" == "youtube-dl" ]]; then
-		(youtube-dl --cookies ./cookies.txt --ignore-errors --embed-thumbnail -x --audio-quality 0 -f 'best[height<=480]' -o '%(uploader)s/%(release_date)s_%(upload_date)s_%(title)s.%(ext)s' "https://www.youtube.com/watch?v=${ID}" 2>/dev/null)
+		(youtube-dl --cookies ./cookies.txt --ignore-errors --embed-thumbnail -x --audio-quality 0 -f 'best[height<=480]' -o '%(uploader)s/%(upload_date)s_%(title)s.%(ext)s' "https://www.youtube.com/watch?v=${ID}" 2>/dev/null)
 	fi
 	
 	RECORD_PID=$! #录制进程PID
