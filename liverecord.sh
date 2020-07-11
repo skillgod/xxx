@@ -60,7 +60,7 @@ while true; do
 		sleep 15
 		kill ${RECORD_PID}
 		
-		rclone copy "${FILENAME_PREFIX}.m4a" googledrive: -P
+		rclone copy "${FILENAME_PREFIX}.m4a" googledrive:${6} -P
 	fi
 	
 	[[ "${LOOP_TIME}" == "once" ]] && break
