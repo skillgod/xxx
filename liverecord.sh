@@ -50,15 +50,18 @@ while true; do
 	if [[ "${1}" == "youtube"* ]]; then ID=$(wget -q -O- "${FULL_URL}" | grep -o '\\"liveStreamabilityRenderer\\":{\\"videoId\\":\\".*\\"' | head -n 1 | sed 's/\\//g' | awk -F'"' '{print $6}'); fi
 	
 	if [[ "${1}" == "youtube-dl" ]]; then
+		FILENAME_PREFIX=$(youtube-dl -s --get-filename --ignore-errors -f 'best[height<=480]' -o '%(uploader)s/%(upload_date)s_%(title)s' "https://www.youtube.com/watch?v=${ID}" 2>/dev/null)
 		(youtube-dl --cookies ./cookies.txt --ignore-errors --embed-thumbnail -x --audio-quality 0 -f 'best[height<=480]' -o '%(uploader)s/%(upload_date)s_%(title)s.%(ext)s' "https://www.youtube.com/watch?v=${ID}" 2>/dev/null)
+		
+		RECORD_PID=$! #录制进程PID
+		RECORD_STOPTIME=$(( $(date +%s)+${LOOP_TIME} )) #录制结束时间戳
+		RECORD_ENDTIME=$(( $(date +%s)+${ENDINTERVAL} )) #录制循环结束的最早时间
+		LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} record start pid=${RECORD_PID} looptime=${LOOP_TIME} url=${STREAM_URL}" #开始录制
+		sleep 15
+		kill ${RECORD_PID}
+		
+		rclone copy "${FILENAME_PREFIX}.m4a" googledrive: -P
 	fi
-	
-	RECORD_PID=$! #录制进程PID
-	RECORD_STOPTIME=$(( $(date +%s)+${LOOP_TIME} )) #录制结束时间戳
-	RECORD_ENDTIME=$(( $(date +%s)+${ENDINTERVAL} )) #录制循环结束的最早时间
-	LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} record start pid=${RECORD_PID} looptime=${LOOP_TIME} url=${STREAM_URL}" #开始录制
-	sleep 15
-	kill ${RECORD_PID}
 	
 	[[ "${LOOP_TIME}" == "once" ]] && break
 	
