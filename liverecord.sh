@@ -58,8 +58,7 @@ while true; do
 			LOG_PREFIX=$(date +"[%Y-%m-%d %H:%M:%S]") ; echo "${LOG_PREFIX} record start pid=${RECORD_PID} looptime=${LOOP_TIME} url=${STREAM_URL}" #开始录制
 			sleep 15
 			kill ${RECORD_PID}
-		
-			rclone copy "${FILENAME_PREFIX}.mp4" onedrive:${6} -P && rm "${FILENAME_PREFIX}.mp4"
+			#rclone copy "${FILENAME_PREFIX}.mp4" onedrive:${6} -P && rm "${FILENAME_PREFIX}.mp4"
     		fi
 	fi
 	
