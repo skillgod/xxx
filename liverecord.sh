@@ -33,9 +33,9 @@ while true; do
 	if [[ "${1}" == "youtube"* ]]; then ID=$(wget -q -O- "${FULL_URL}" | grep -o '\\"liveStreamabilityRenderer\\":{\\"videoId\\":\\".*\\"' | head -n 1 | sed 's/\\//g' | awk -F'"' '{print $6}'); fi
 	
 	if [[ "${1}" == "youtube-dl" ]]; then
-    		FILENAME_PREFIX=$(youtube-dl -s --get-filename --ignore-errors -f 'best[height<=480]' -o '%(uploader)s/%(upload_date)s_%(title)s' "https://www.youtube.com/watch?v=${ID}" 2>/dev/null)
+    		FILENAME_PREFIX=$(youtube-dl --cookies 'cookies.txt' -s --get-filename --ignore-errors -f 'best[height<=480]' -o '%(uploader)s/%(upload_date)s_%(title)s' "https://www.youtube.com/watch?v=${ID}" 2>/dev/null)
     		if [[ "${LIVE_A_V}" == "audio" ]]; then
-			(youtube-dl --ignore-errors --embed-thumbnail -x --audio-quality 0 -f 'best[height<=480]' -o '%(uploader)s/%(upload_date)s_%(title)s.%(ext)s' "https://www.youtube.com/watch?v=${ID}" 2>/dev/null)
+			(youtube-dl --cookies 'cookies.txt' --ignore-errors --embed-thumbnail -x --audio-quality 0 -f 'best[height<=480]' -o '%(uploader)s/%(upload_date)s_%(title)s.%(ext)s' "https://www.youtube.com/watch?v=${ID}" 2>/dev/null)
 		
 			RECORD_PID=$! #录制进程PID
 			RECORD_STOPTIME=$(( $(date +%s)+${LOOP_TIME} )) #录制结束时间戳
@@ -48,9 +48,9 @@ while true; do
 			rclone copy "${FILENAME_PREFIX}.m4a" onedrive:${6} -P 2>/dev/null
     		else
       			if [[ "${FORMAT}" == "best" ]]; then
-        			(youtube-dl --ignore-errors -f "best" -o '%(uploader)s/%(upload_date)s_%(title)s.%(ext)s' "https://www.youtube.com/watch?v=${ID}" 2>/dev/null)
+        			(youtube-dl --cookies 'cookies.txt' --ignore-errors -f "best" -o '%(uploader)s/%(upload_date)s_%(title)s.%(ext)s' "https://www.youtube.com/watch?v=${ID}" 2>/dev/null)
       			else
-        			(youtube-dl --ignore-errors -f "best[height<=${FORMAT}]" -o '%(uploader)s/%(upload_date)s_%(title)s.%(ext)s' "https://www.youtube.com/watch?v=${ID}" 2>/dev/null)
+        			(youtube-dl --cookies 'cookies.txt' --ignore-errors -f "best[height<=${FORMAT}]" -o '%(uploader)s/%(upload_date)s_%(title)s.%(ext)s' "https://www.youtube.com/watch?v=${ID}" 2>/dev/null)
 			fi
 			RECORD_PID=$! #录制进程PID
 			RECORD_STOPTIME=$(( $(date +%s)+${LOOP_TIME} )) #录制结束时间戳
